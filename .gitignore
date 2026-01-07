@@ -69,3 +69,23 @@ vendor/
 # Backup files
 # ===============================
 *~
+# Build artifacts
+build/
+*.o
+*.out
+*.exe
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# System
+.DS_Store

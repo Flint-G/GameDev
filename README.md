@@ -105,3 +105,19 @@ The documentation serves as learning notes and helps understand design decisions
 
 This project is intended for educational purposes.
 Add a license if you plan to distribute or open-source it.
+# GameDev
+
+Trying fun new things
+
+# F1 Simulation Engine
+
+A C++ based Formula 1 racing simulation engine.
+
+## Build
+```bash
+mkdir build && cd build
+cmake ..
+make
+./f1sim
+```
+
