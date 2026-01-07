@@ -1,0 +1,71 @@
+# ===============================
+# Build folders & compiled files
+# ===============================
+build/
+bin/
+out/
+dist/
+
+# CMake build files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# ===============================
+# Compiled binaries
+# ===============================
+*.o
+*.obj
+*.exe
+*.out
+*.app
+*.dll
+*.so
+*.a
+*.lib
+
+# ===============================
+# Debug / profiler files
+# ===============================
+*.log
+*.dbg
+*.dSYM/
+*.prof
+gmon.out
+
+# ===============================
+# IDE & Editor files
+# ===============================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# ===============================
+# OS generated files
+# ===============================
+.DS_Store
+Thumbs.db
+
+# ===============================
+# Game-specific
+# ===============================
+# Save files / runtime data
+saves/
+cache/
+
+# Temporary generated assets
+assets/generated/
+
+# ===============================
+# Package managers / libs
+# ===============================
+node_modules/
+vendor/
+
+# ===============================
+# Backup files
+# ===============================
+*~
