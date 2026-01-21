@@ -5,6 +5,7 @@ build/
 bin/
 out/
 dist/
+libs/
 
 # CMake build files
 CMakeFiles/

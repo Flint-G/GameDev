@@ -1,66 +1,67 @@
-# Minimum CMake version
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
+project(F1SimulationEngine VERSION 0.1.0 LANGUAGES CXX C)
 
-# Project name and language
-project(GameDev VERSION 1.0 LANGUAGES CXX)
-
-# Use C++17 standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # =========================
-# Include directories
+# Sources
 # =========================
-include_directories(
-    include
+set(CORE_SOURCES
+    src/engine/Engine.cpp
+    src/engine/Car.cpp        # <--- added
 )
 
-# =========================
-# Source files
-# =========================
-# Automatically include all .cpp files in src/ and subdirectories
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+set(RENDER_SOURCES
+    src/render/Window.cpp
+    src/render/Renderer.cpp
+    shaders/Shader.cpp 
+)
+
+set(APP_SOURCES
+    src/main.cpp
+)
+
+# GLAD source (must compile)
+set(GLAD_SOURCES
+    libs/glad/glad.c
+)
+
+# Combine all sources
+set(ALL_SOURCES
+    ${CORE_SOURCES}
+    ${RENDER_SOURCES}
+    ${APP_SOURCES}
+    ${GLAD_SOURCES}
+)
 
 # =========================
 # Create executable
 # =========================
-add_executable(GameDev ${SOURCES})
+add_executable(f1sim ${ALL_SOURCES})
 
 # =========================
-# Optional: compiler warnings
+# Include directories (folders, NOT files)
+target_include_directories(f1sim PRIVATE
+    include
+    src
+    libs/glad          # folder containing glad.h & khrplatform.h
+    shaders            # folder containing Shader.h
+)
+
 # =========================
+# Link system libraries (Linux)
+find_package(OpenGL REQUIRED)
+target_link_libraries(f1sim PRIVATE OpenGL::GL glfw)
+
+# =========================
+# Compiler warnings
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(GameDev PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(f1sim PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 # =========================
 # Output directory
-# =========================
-set_target_properties(GameDev PROPERTIES
+set_target_properties(f1sim PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
-cmake_minimum_required(VERSION 3.20)
-project(F1SimulationEngine VERSION 0.1.0 LANGUAGES CXX)
-
-# C++ standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Compiler warnings
-add_compile_options(-Wall -Wextra -Wpedantic)
-
-# Directories
-include_directories(include)
-
-# Source files
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-
-# Main executable
-add_executable(f1sim ${SOURCES})
-
-# Tests (optional, can be added later)
-option(BUILD_TESTS "Build tests" OFF)
-if(BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
