@@ -1,40 +1,66 @@
-#include "../../include/Car.h"
-#include <cmath>
+#include "Car.h"
 #include <algorithm>
+#include <cmath>
 
+constexpr float WORLD_MIN_X = -0.95f;
+constexpr float WORLD_MAX_X =  0.95f;
+constexpr float WORLD_MIN_Y = -0.95f;
+constexpr float WORLD_MAX_Y =  0.95f;
 
 void Car::update(float dt) {
-    // Constants
-    const float ACCEL = 20.0f;       // acceleration power
-    const float MAX_SPEED = 40.0f;   // max forward speed
-    const float MAX_REVERSE = -15.0f; // max reverse speed
-    const float DRAG = 8.0f;         // slows car down
-    const float TURN_RATE = 3.5f;    // steering speed
-    const float CAR_HALF_WIDTH  = 0.1f; // half width of car in NDC
-    const float CAR_HALF_HEIGHT = 0.05f; // half height of car in NDC
+    dtStep = dt;
 
-    // 1) Acceleration (forward/backward)
-    speed += throttle * ACCEL * dt;
+    updateForces();
+    updateMotion(dt);
+}
 
-    // 2) Clamp speed to max forward/reverse
-    speed = std::clamp(speed, MAX_REVERSE, MAX_SPEED);
+void Car::updateForces() {
+    // Engine force depends on gear
+    float engineSign = (gear == Gear::Forward) ? 1.0f : -1.0f;
+    float F_engine = engineSign * throttle * mu * mass * 9.81f;
 
-    // 3) Apply drag (natural slowdown)
-    if (speed > 0.0f) {
-        speed = std::max(0.0f, speed - DRAG * dt);
-    } else if (speed < 0.0f) {
-        speed = std::min(0.0f, speed + DRAG * dt);
+    // Brake force
+    float F_brake = brake * mu * mass * 9.81f * 1.5f;
+
+    // Drag & rolling resistance
+    float F_drag = -dragCoeff * speed * std::abs(speed);
+    float F_rr = -rollingRes * speed;
+
+    // Net force
+    F_long = F_engine + F_drag + F_rr;
+
+    // Apply brake opposite to motion
+    if (std::abs(speed) > 0.01f) {
+        F_long -= std::copysign(F_brake, speed);
+    }
+}
+
+void Car::updateMotion(float dt) {
+    // Update speed
+    float acceleration = F_long / mass;
+    speed += acceleration * dt;
+
+    // Clamp speed to limits
+    speed = std::clamp(speed, MAX_REVERSE_SPEED, MAX_FORWARD_SPEED);
+
+    // Steering
+    if (std::abs(steer) > 0.001f && std::abs(speed) > 0.01f) {
+        float turnRadius = wheelbase / std::tan(steer);
+        float angularVelocity = speed / turnRadius;
+        heading += angularVelocity * dt;
     }
 
-    // 4) Steering (only when moving)
-    float speedFactor = std::abs(speed) / MAX_SPEED; // 0..1
-    heading += steer * TURN_RATE * speedFactor * dt;
-
-    // 5) Movement
+    // Update position
     glm::vec2 forward(std::cos(heading), std::sin(heading));
     position += forward * speed * dt;
 
-    // 6) Clamp to screen boundaries
-    position.x = std::clamp(position.x, -1.0f + CAR_HALF_WIDTH, 1.0f - CAR_HALF_WIDTH);
-    position.y = std::clamp(position.y, -1.0f + CAR_HALF_HEIGHT, 1.0f - CAR_HALF_HEIGHT);
+    // Clamp to world boundaries
+    position.x = std::clamp(position.x, WORLD_MIN_X, WORLD_MAX_X);
+    position.y = std::clamp(position.y, WORLD_MIN_Y, WORLD_MAX_Y);
+
+    // Stop car if hitting boundaries
+    if (position.x == WORLD_MIN_X || position.x == WORLD_MAX_X ||
+        position.y == WORLD_MIN_Y || position.y == WORLD_MAX_Y) {
+        speed = 0.0f;
+    }
 }
