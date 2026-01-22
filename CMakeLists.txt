@@ -7,9 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # =========================
 # Sources
 # =========================
+
 set(CORE_SOURCES
     src/engine/Engine.cpp
-    src/engine/Car.cpp        # <--- added
+    src/engine/Car.cpp
 )
 
 set(RENDER_SOURCES
@@ -22,9 +23,15 @@ set(APP_SOURCES
     src/main.cpp
 )
 
-# GLAD source (must compile)
+# GLAD source (C file)
 set(GLAD_SOURCES
     libs/glad/glad.c
+)
+
+# Texture loader
+set(TEXTURE_SOURCES
+    resources/vendors/stb_image/stb_image.cpp
+    src/texture/Texture.cpp
 )
 
 # Combine all sources
@@ -33,6 +40,7 @@ set(ALL_SOURCES
     ${RENDER_SOURCES}
     ${APP_SOURCES}
     ${GLAD_SOURCES}
+    ${TEXTURE_SOURCES}
 )
 
 # =========================
@@ -41,27 +49,36 @@ set(ALL_SOURCES
 add_executable(f1sim ${ALL_SOURCES})
 
 # =========================
-# Include directories (folders, NOT files)
+# Include directories
+# =========================
 target_include_directories(f1sim PRIVATE
     include
     src
-    libs/glad          # folder containing glad.h & khrplatform.h
-    shaders            # folder containing Shader.h
+    libs/glad            # glad.h & khrplatform.h
+    shaders              # Shader.h
+    resources/vendors/stb_image
 )
 
 # =========================
 # Link system libraries (Linux)
+# =========================
 find_package(OpenGL REQUIRED)
 target_link_libraries(f1sim PRIVATE OpenGL::GL glfw)
 
 # =========================
 # Compiler warnings
+# =========================
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    # Enable warnings for all your C++ code
     target_compile_options(f1sim PRIVATE -Wall -Wextra -Wpedantic)
+
+    # Suppress pedantic warnings ONLY for glad.c
+    set_source_files_properties(libs/glad/glad.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
 endif()
 
 # =========================
 # Output directory
+# =========================
 set_target_properties(f1sim PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
