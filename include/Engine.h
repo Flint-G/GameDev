@@ -3,7 +3,13 @@
 #include "../src/render/Window.h"
 #include "../src/render/Renderer.h"
 #include "Car.h"
+#include "Rock.h"
+#include "RoadLine.h"
+#include "Tree.h"
+#include <vector>
+
 #include "../src/texture/Texture.h"
+
 class Engine {
 public:
     bool init();
@@ -20,4 +26,12 @@ private:
     Renderer renderer;
     Car car;
     Texture bgTexture;
+    Texture rockTexture;
+    Texture lineTexture;
+    Texture treeTexture;
+    std::vector<Rock> rocks;
+    std::vector<RoadLine> lines;
+    std::vector<Tree> trees;
 };
+
+

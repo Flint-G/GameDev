@@ -19,13 +19,64 @@ bool Engine::init() {
   if (!bgTexture.loadFromFile("assets/background.png")) {
     std::cerr << "Failed to load background texture!\n";
   }
+  if (!rockTexture.loadFromFile("assets/rock.png")) {
+    std::cerr << "Failed to load rock texture!\n";
+  }
 
   std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
   if (!car.loadTexture("assets/car.png")) {
     std::cerr << "Failed to load car texture!" << std::endl;
   }
+  if (!lineTexture.loadFromFile("assets/roadStripe.png")) {
+      std::cerr << "Failed to load roadStripe texture!\n";
+  }
+  if (!treeTexture.loadFromFile("assets/tree.png")) {
+      std::cerr << "Failed to load tree texture!\n";
+  }
+
+  // Initialize objects
+  rocks.clear();
+  trees.clear();
+  lines.clear();
+
+  // Helper lambda for random float
+  auto randomFloat = [](float min, float max) {
+      return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
+  };
+
+  // Spawn objects along the track
+  for (int i = 0; i < 50; ++i) {
+      float y = i * 2.0f + randomFloat(-0.5f, 0.5f);
+      
+      // Left Side
+      float xLeft = randomFloat(-1.8f, -0.6f); 
+      // Right Side
+      float xRight = randomFloat(0.6f, 1.8f);
+
+      // Randomly choose side or both for variety
+      if (rand() % 2 == 0) {
+          trees.emplace_back(glm::vec2(xLeft, y), 0.0f);
+      } else {
+          trees.emplace_back(glm::vec2(xRight, y), 0.0f);
+      }
+
+      // Add rocks occasionally
+      if (i % 5 == 0) {
+          float rockX = (rand() % 2 == 0) ? xLeft : xRight;
+          rocks.emplace_back(glm::vec2(rockX, y + 1.0f), randomFloat(0.0f, 6.0f));
+      }
+  }
+
+  // Initialize road lines
+  for (int i = -10; i < 20; ++i) {
+      RoadLine line;
+      line.position = glm::vec2(0.0f, i * 0.8f); 
+      line.size = glm::vec2(0.02f, 0.3f);         
+      lines.push_back(line);
+  }
 
   renderer.init();
+
   return true;
 }
 
@@ -37,9 +88,7 @@ void Engine::handleInput() {
   car.setBrake(0.0f);
   car.setSteer(0.0f);
 
-  // ======================
   // Forward / Reverse / Brake
-  // ======================
   if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS) {
     car.setGearForward();
     car.setThrottle(1.0f);
@@ -48,14 +97,11 @@ void Engine::handleInput() {
     car.setThrottle(1.0f);
   }
 
-  // Optional: Space bar as emergency brake
+  // Space bar as emergency brake
   if (glfwGetKey(win, GLFW_KEY_SPACE) == GLFW_PRESS) {
     car.setBrake(1.0f);
   }
-
-  // ======================
   // Steering (A / D)
-  // ======================
   float steer = 0.0f;
   const float MAX_STEER = 0.35f; // ~20 degrees
 
@@ -67,9 +113,7 @@ void Engine::handleInput() {
 
   car.setSteer(steer);
 
-  // ======================
   // Exit
-  // ======================
   if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(win, true);
 }
@@ -78,26 +122,72 @@ void Engine::run() {
     float lastTime = glfwGetTime();
     
     // Background scroll factor controls how fast the background moves relative to car
-    const float scrollFactor = 0.05f;  
-    glm::vec2 bgOffset(0.0f, 0.0f); // initial offset
+    glm::vec2 bgOffset(0.0f, 0.0f);
+
 
     while (!window.shouldClose()) {
         float currentTime = glfwGetTime();
         float deltaTime = std::clamp(currentTime - lastTime, 0.001f, 0.03f);
         lastTime = currentTime;
 
-        handleInput();       // update car controls
-        car.update(deltaTime); // update car physics
+        handleInput();       
+        car.update(deltaTime); 
 
-        // Calculate background offset so it loops while car moves
-        // Only scale by scrollFactor to slow down background movement
-        bgOffset.x = -car.getPosition().x * scrollFactor;
-        bgOffset.y = -car.getPosition().y * scrollFactor;
+        // Camera follows the car
+        glm::vec2 cameraPos = car.getPosition();
+        cameraPos.x = 0.0f; 
+        cameraPos.y += 0.5f; 
+        
+        renderer.setCameraPosition(cameraPos);
 
-        renderer.clear();                        // clear screen
-        renderer.drawBackground(bgTexture); // draw scrolling background
-        renderer.drawCar(car);                   // draw car at center
+        float recycleThreshold = cameraPos.y - 4.5f; 
+        float respawnY = cameraPos.y + 2.5f;         
 
+        // Recycle lines
+        for (auto& line : lines) {
+            if (line.position.y < recycleThreshold) {
+                
+                line.position.y += 30 * 0.8f; 
+            }
+        }
+
+        // Recycle rocks
+        for (auto& rock : rocks) {
+             if (rock.getPosition().y < recycleThreshold) {
+                 float newY = respawnY + (rand() % 50) / 10.0f; 
+                 float newX = (rand() % 2 == 0) ? -1.5f : 1.5f; 
+                 newX += (rand() % 100 / 100.0f) * 0.4f - 0.2f;
+                 rock.setPosition(glm::vec2(newX, newY));
+             }
+        }
+
+        // Recycle trees
+        for (auto& tree : trees) {
+             if (tree.getPosition().y < recycleThreshold) {
+                 float newY = respawnY + (rand() % 50) / 10.0f;
+                 float newX = (rand() % 2 == 0) ? -1.5f : 1.5f;
+                 newX += (rand() % 100 / 100.0f) * 0.4f - 0.2f;
+                 tree.setPosition(glm::vec2(newX, newY));
+             }
+        }
+
+        renderer.clear();
+        renderer.drawBackground(bgTexture); 
+        
+        for (const auto& line : lines) {
+            renderer.drawRoadLine(line, lineTexture);
+        }
+
+        for (const auto& rock : rocks) {
+            renderer.drawRock(rock, rockTexture);
+        }
+
+        for (const auto& tree : trees) {
+            renderer.drawTree(tree, treeTexture);
+        }
+
+        renderer.drawCar(car);                   
+        
         window.swap();
         window.poll();
     }
