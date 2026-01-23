@@ -4,8 +4,7 @@
 
 constexpr float WORLD_MIN_X = -0.95f;
 constexpr float WORLD_MAX_X =  0.95f;
-constexpr float WORLD_MIN_Y = -0.95f;
-constexpr float WORLD_MAX_Y =  0.95f;
+
 
 void Car::update(float dt) {
     dtStep = dt;
@@ -54,13 +53,13 @@ void Car::updateMotion(float dt) {
     glm::vec2 forward(std::cos(heading), std::sin(heading));
     position += forward * speed * dt;
 
-    // Clamp to world boundaries
+    // Clamp to world boundaries (X only, allow infinite Y)
     position.x = std::clamp(position.x, WORLD_MIN_X, WORLD_MAX_X);
-    position.y = std::clamp(position.y, WORLD_MIN_Y, WORLD_MAX_Y);
 
-    // Stop car if hitting boundaries
-    if (position.x == WORLD_MIN_X || position.x == WORLD_MAX_X ||
-        position.y == WORLD_MIN_Y || position.y == WORLD_MAX_Y) {
+
+    // Stop car if hitting boundaries (X only)
+    if (position.x == WORLD_MIN_X || position.x == WORLD_MAX_X) {
         speed = 0.0f;
     }
+
 }

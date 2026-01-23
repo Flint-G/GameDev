@@ -14,13 +14,16 @@ void Renderer::init() {
 
         uniform mat4 uModel;
         uniform mat4 uProj;
+        uniform mat4 uView; 
 
         out vec2 TexCoord;
         void main() {
-            gl_Position = uProj * uModel * vec4(aPos, 0.0, 1.0);
+            gl_Position = uProj * uView * uModel * vec4(aPos, 0.0, 1.0);
             TexCoord = aTexCoord;
         }
     )";
+
+
 
     // Fragment shader
     const std::string fragmentShaderSrc = R"(
@@ -28,10 +31,13 @@ void Renderer::init() {
         out vec4 FragColor;
         in vec2 TexCoord;
         uniform sampler2D uTexture;
+        uniform vec2 uTexOffset; 
+
         void main() {
-            FragColor = texture(uTexture, TexCoord);
+            FragColor = texture(uTexture, TexCoord + uTexOffset);
         }
     )";
+
 
     shader = new Shader(vertexShaderSrc, fragmentShaderSrc);
 
@@ -80,7 +86,11 @@ void Renderer::drawBackground(const Texture& bg) {
     shader->use();
     bg.bind();
 
-    // Full-screen background: identity matrices
+    glm::mat4 view = glm::mat4(1.0f); 
+    shader->setMat4("uView", view);
+    
+    shader->setVec2("uTexOffset", glm::vec2(0.0f, cameraPos.y * 0.05f)); 
+
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 proj  = glm::mat4(1.0f);
     shader->setMat4("uModel", model);
@@ -97,6 +107,8 @@ void Renderer::drawCar(const Car& car) {
     if (!shader || shader->getID() == 0) return;
 
     shader->use();
+    shader->setVec2("uTexOffset", glm::vec2(0.0f)); 
+
     car.carTexture.bind();
 
     float texWidth  = (float)car.carTexture.getWidth();
@@ -106,8 +118,12 @@ void Renderer::drawCar(const Car& car) {
     float desiredHeight = 0.2f;
     float desiredWidth  = desiredHeight * aspect;
 
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraPos.x, -cameraPos.y, 0.0f));
+    shader->setMat4("uView", view);
+
     glm::mat4 model(1.0f);
     model = glm::translate(model, glm::vec3(car.getPosition(), 0.0f));
+
     model = glm::rotate(model, car.getHeading() - 1.57079632679f, glm::vec3(0,0,1));
     model = glm::scale(model, glm::vec3(desiredWidth, desiredHeight, 1.0f));
 
@@ -121,6 +137,110 @@ void Renderer::drawCar(const Car& car) {
 
     car.carTexture.unbind();
 }
+
+
+void Renderer::drawRock(const Rock& rock, const Texture& texture){
+    if (!shader || shader->getID() == 0) return;
+
+    shader->use();
+    texture.bind();
+
+    float texWidth  = (float)texture.getWidth();
+    float texHeight = (float)texture.getHeight();
+    float aspect    = texWidth / texHeight;
+
+    float desiredHeight = 0.2f;
+    float desiredWidth  = desiredHeight * aspect;
+
+    // View matrix
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraPos.x, -cameraPos.y, 0.0f));
+    shader->setMat4("uView", view);
+    shader->setVec2("uTexOffset", glm::vec2(0.0f));
+
+    glm::mat4 model(1.0f);
+    model = glm::translate(model, glm::vec3(rock.getPosition(), 0.0f));
+
+    model = glm::rotate(model, rock.getHeading() - 1.57079632679f, glm::vec3(0,0,1));
+    model = glm::scale(model, glm::vec3(desiredWidth, desiredHeight, 1.0f));
+
+    glm::mat4 proj = glm::ortho(-1.f, 1.f, -1.f, 1.f);
+    shader->setMat4("uModel", model);
+    shader->setMat4("uProj", proj);
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+
+    texture.unbind();
+}
+
+void Renderer::drawTree(const Tree& tree, const Texture& texture) {
+    if (!shader || shader->getID() == 0) return;
+
+    shader->use();
+    texture.bind();
+
+    float texWidth  = (float)texture.getWidth();
+    float texHeight = (float)texture.getHeight();
+    float aspect    = texWidth / texHeight;
+
+    float desiredHeight = 0.4f; 
+    float desiredWidth  = desiredHeight * aspect;
+
+    // View matrix
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraPos.x, -cameraPos.y, 0.0f));
+    shader->setMat4("uView", view);
+    shader->setVec2("uTexOffset", glm::vec2(0.0f));
+    
+    glm::mat4 model(1.0f);
+
+    model = glm::translate(model, glm::vec3(tree.getPosition(), 0.0f));
+   
+    model = glm::rotate(model, tree.getHeading() - 1.57079632679f, glm::vec3(0,0,1));
+    model = glm::scale(model, glm::vec3(desiredWidth, desiredHeight, 1.0f));
+
+    glm::mat4 proj = glm::ortho(-1.f, 1.f, -1.f, 1.f);
+    shader->setMat4("uModel", model);
+    shader->setMat4("uProj", proj);
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+
+    texture.unbind();
+}
+
+
+
+void Renderer::drawRoadLine(const RoadLine& line, const Texture& texture) {
+    if (!shader || shader->getID() == 0) return;
+
+    shader->use();
+    texture.bind();
+
+    // View matrix
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraPos.x, -cameraPos.y, 0.0f));
+    shader->setMat4("uView", view);
+    shader->setVec2("uTexOffset", glm::vec2(0.0f));
+
+    glm::mat4 model(1.0f);
+
+    model = glm::translate(model, glm::vec3(line.position, 0.0f));
+    // No rotation for lines usually, or simple scaling
+    model = glm::scale(model, glm::vec3(line.size.x, line.size.y, 1.0f));
+
+    glm::mat4 proj = glm::ortho(-1.f, 1.f, -1.f, 1.f);
+    shader->setMat4("uModel", model);
+    shader->setMat4("uProj", proj);
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+
+    texture.unbind();
+}
+
+
 
 Renderer::~Renderer() {
     if(shader) delete shader;
