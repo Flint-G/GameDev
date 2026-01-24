@@ -49,17 +49,33 @@ void Car::updateMotion(float dt) {
         heading += angularVelocity * dt;
     }
 
-    // Update position
+    // Update velocity vector for collision
     glm::vec2 forward(std::cos(heading), std::sin(heading));
-    position += forward * speed * dt;
+    collider.velocity = forward * speed;
+
+    // Update position
+    collider.position += collider.velocity * dt;
 
     // Clamp to world boundaries (X only, allow infinite Y)
-    position.x = std::clamp(position.x, WORLD_MIN_X, WORLD_MAX_X);
+    collider.position.x = std::clamp(collider.position.x, WORLD_MIN_X, WORLD_MAX_X);
 
 
     // Stop car if hitting boundaries (X only)
-    if (position.x == WORLD_MIN_X || position.x == WORLD_MAX_X) {
+    if (collider.position.x == WORLD_MIN_X || collider.position.x == WORLD_MAX_X) {
         speed = 0.0f;
+        collider.velocity = {0.0f, 0.0f};
     }
 
+}
+
+void Car::syncFromCollider() {
+    // If collision resolution changed velocity, update 'speed'
+    // Project velocity onto heading to get new speed (simplified)
+    glm::vec2 forward(std::cos(heading), std::sin(heading));
+    float newSpeed = glm::dot(collider.velocity, forward);
+    
+    // Optional: If significant lateral impulse, maybe adjust heading? 
+    // For now, just damp speed and stick to track heading mostly
+    
+    speed = newSpeed;
 }

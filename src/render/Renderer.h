@@ -13,9 +13,10 @@ public:
 
     void init();
     void setCameraPosition(const glm::vec2& pos) { cameraPos = pos; }
-    void clear(); // clear screen
+    void clear();
 
     void drawCar(const Car& car);
+    void drawCarAt(const glm::vec2& pos, float heading, const Texture& texture);
     void drawBackground(const Texture& bg); // single argument
     void drawRock(const Rock& rock, const Texture& texture);
     void drawTree(const Tree& tree, const Texture& texture);

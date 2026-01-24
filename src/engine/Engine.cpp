@@ -1,12 +1,14 @@
 #include "../../include/Engine.h"
 #include "../../include/Car.h"
+#include "../../include/Collision.h"
 #include "../../libs/glad/glad.h"
 #include "../texture/Texture.h"
-
+#include "../render/Renderer.h"
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <glm/gtc/matrix_transform.hpp>
 
 bool Engine::init() {
   if (!window.createFullscreen("Himalayan F1"))
@@ -22,7 +24,6 @@ bool Engine::init() {
   if (!rockTexture.loadFromFile("assets/rock.png")) {
     std::cerr << "Failed to load rock texture!\n";
   }
-
   std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
   if (!car.loadTexture("assets/car.png")) {
     std::cerr << "Failed to load car texture!" << std::endl;
@@ -76,6 +77,14 @@ bool Engine::init() {
   }
 
   renderer.init();
+  if (!textRenderer.init("assets/Roboto-Regular.ttf")) {
+      std::cout << "Warning: Failed to load font!\n";
+  }
+
+  // Initialize Client
+  if (!client.connect("127.0.0.1")) {
+      std::cout << "Failed to connect to server (Is it running?). Playing in offline mode.\n";
+  }
 
   return true;
 }
@@ -130,8 +139,33 @@ void Engine::run() {
         float deltaTime = std::clamp(currentTime - lastTime, 0.001f, 0.03f);
         lastTime = currentTime;
 
-        handleInput();       
+        if (client.hasSpawned) {
+             car.collider.position = client.myStartPosition;
+             car.syncFromCollider();
+             client.hasSpawned = false; // Only once
+        }
+
+        handleInput();
+        client.update(deltaTime);
+        client.sendPosition(car.getPosition());
+        
         car.update(deltaTime); 
+
+        // Collision Checks
+        // 1. Car vs Rocks
+        for (auto& rock : rocks) {
+            if (Collision::checkCollision(car.collider, rock.collider)) {
+                Collision::resolveCollision(car.collider, rock.collider);
+                car.syncFromCollider();
+            }
+        }
+        // 2. Car vs Trees
+        for (auto& tree : trees) {
+            if (Collision::checkCollision(car.collider, tree.collider)) {
+                Collision::resolveCollision(car.collider, tree.collider);
+                car.syncFromCollider();
+            }
+        }
 
         // Camera follows the car
         glm::vec2 cameraPos = car.getPosition();
@@ -186,7 +220,24 @@ void Engine::run() {
             renderer.drawTree(tree, treeTexture);
         }
 
-        renderer.drawCar(car);                   
+        for (const auto& tree : trees) {
+            renderer.drawTree(tree, treeTexture);
+        }
+
+        // Draw local car
+        renderer.drawCar(car);
+
+        // Draw remote cars
+        for (const auto& [id, player] : client.otherPlayers) {
+             // For now, assume same car texture and heading up
+             renderer.drawCarAt(player.currentPos, 3.14159f / 2.0f, car.carTexture);
+             
+             // Draw Name
+             glm::mat4 proj = glm::ortho(-1.8f, 1.8f, -1.0f, 1.0f); // Match game aspect (roughly)
+             textRenderer.setProjection(proj);
+             // Offset text slightly above car
+             textRenderer.drawText(player.name, player.currentPos.x - 0.1f, player.currentPos.y + 0.2f, 0.001f, glm::vec3(1.0f, 1.0f, 1.0f));
+        }                   
         
         window.swap();
         window.poll();
