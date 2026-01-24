@@ -11,11 +11,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CORE_SOURCES
     src/engine/Engine.cpp
     src/engine/Car.cpp
+    src/engine/Collision.cpp
 )
 
 set(RENDER_SOURCES
     src/render/Window.cpp
     src/render/Renderer.cpp
+    src/render/TextRenderer.cpp
     shaders/Shader.cpp 
 )
 
@@ -62,8 +64,23 @@ target_include_directories(f1sim PRIVATE
 # =========================
 # Link system libraries (Linux)
 # =========================
+# =========================
+# System Dependencies (FetchContent)
+# =========================
+include(FetchContent)
+
+FetchContent_Declare(
+  enet
+  GIT_REPOSITORY https://github.com/zpl-c/enet.git
+  GIT_TAG        master
+)
+FetchContent_MakeAvailable(enet)
+
+# =========================
+# Link system libraries (Linux)
+# =========================
 find_package(OpenGL REQUIRED)
-target_link_libraries(f1sim PRIVATE OpenGL::GL glfw)
+target_link_libraries(f1sim PRIVATE OpenGL::GL glfw enet_static)
 
 # =========================
 # Compiler warnings

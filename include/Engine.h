@@ -7,8 +7,12 @@
 #include "RoadLine.h"
 #include "Tree.h"
 #include <vector>
-
+#include "Collider.h"
 #include "../src/texture/Texture.h"
+#include "../src/render/TextRenderer.h"
+#include "Client.h"
+
+enum class GameState { WAITING, RACING, FINISHED };
 
 class Engine {
 public:
@@ -24,6 +28,9 @@ private:
     glm::vec2 bgOffset {0.0f, 0.0f};
     Window window;
     Renderer renderer;
+    TextRenderer textRenderer;
+    Client client;
+
     Car car;
     Texture bgTexture;
     Texture rockTexture;
@@ -32,6 +39,11 @@ private:
     std::vector<Rock> rocks;
     std::vector<RoadLine> lines;
     std::vector<Tree> trees;
+
+    GameState gameState = GameState::WAITING;
+    float raceLength = 1000.0f; 
+    bool raceFinished = false;
+    Texture finishTexture;
 };
 
 
