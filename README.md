@@ -1,4 +1,4 @@
-# Himalayan F1 Simulation
+# Car Simulation
 
 A C++ multiplayer F1 racing simulation using OpenGL and ENet.
 
